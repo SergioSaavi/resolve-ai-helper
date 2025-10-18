@@ -21,27 +21,34 @@ Resolve AI Helper is an open-source tool that adds automatic subtitle generation
 ## 🎬 How It Works
 
 ```
-┌─────────────────────────────────┐
-│   DaVinci Resolve (Free)        │
-│   User runs script from         │
-│   Workspace → Scripts menu      │
-└────────────┬────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────┐
-│  Standalone Executable          │
-│  • Shows settings UI            │
-│  • Runs Whisper transcription   │
-│  • Returns SRT file             │
-└────────────┬────────────────────┘
-             │
-             ▼
-┌─────────────────────────────────┐
-│   Timeline with Subtitles! ✨   │
-└─────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│                 DaVinci Resolve (Free)                     │
+│  Workspace → Scripts                                       │
+│  • test_exe_place_subtitle.py  (supervisor, persistent)    │
+│  • launch_transcribe_ui.py     (one‑shot launcher)         │
+└───────────────┬────────────────────────────────────────────┘
+                │  JSON over stdin/stdout (pipes)
+                ▼
+┌────────────────────────────────────────────────────────────┐
+│           Standalone Executable (PySide6 UI)               │
+│  • Fast onedir build                                       │
+│  • Interactive mode (--interactive)                        │
+│    - Listens for JSON commands on stdin                    │
+│    - Emits single‑line JSON responses on stdout            │
+│  • Whisper via faster‑whisper (models download on first run)│
+└───────────────┬────────────────────────────────────────────┘
+                │
+                ▼
+┌────────────────────────────────────────────────────────────┐
+│              Timeline / Media Pool (in Resolve)            │
+│  • Supervisor imports SRT into subtitle track              │
+└────────────────────────────────────────────────────────────┘
 ```
 
-**Why this approach?** DaVinci Resolve's free version blocks custom UI in scripts. By moving the UI to a standalone executable, we bypass this limitation while maintaining a seamless user experience.
+Why this approach
+- Resolve Free cannot host custom UI; our UI runs externally.
+- Resolve remains the single source of truth for all timeline actions; the supervisor script imports SRTs and controls the loop.
+- Interactive mode lets the UI stay open for multiple actions without relaunching.
 
 ## 🚀 Quick Start
 
@@ -59,21 +66,29 @@ Resolve AI Helper is an open-source tool that adds automatic subtitle generation
 
 3. **Run the installer** (or manual setup - see [INSTALL.md](INSTALL.md))
 
-4. **Copy the Resolve script**:
-   ```
-   Copy: resolve_scripts/transcribe_timeline.py
-   To: %APPDATA%\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Comp\
-   ```
+4. **Copy to Resolve (Comp scripts folder)**
+   - Copy the entire folder `dist/ResolveAIHelper/` into:
+     `%PROGRAMDATA%\Blackmagic Design\DaVinci Resolve\Fusion\Scripts\Comp\`
+   - Inside that folder you will have:
+     - `resolve_ai_helper/` (the onedir exe folder)
+     - `launch_transcribe_ui.py` (one‑shot)
+     - You can also copy `resolve_scripts/test_exe_place_subtitle.py` (supervisor, recommended)
 
 5. **Restart DaVinci Resolve**
 
 ### Usage
 
 1. Open your timeline in DaVinci Resolve
-2. Go to **Workspace → Scripts → transcribe_timeline**
-3. Select your preferred model and settings
-4. Click **Transcribe** and wait
-5. Subtitles appear automatically in your timeline! 🎉
+Option A — Persistent (recommended for multi‑actions)
+1. Workspace → Scripts → Comp → `test_exe_place_subtitle`
+2. The UI opens once in interactive mode
+3. Click actions in the UI (e.g., “Place Test Subtitle”, or Transcribe)
+4. Each action emits JSON; the supervisor imports the SRT to the timeline
+5. Close the UI (or press Cancel) to stop the supervisor
+
+Option B — One‑shot
+1. Workspace → Scripts → Comp → `launch_transcribe_ui`
+2. Configure settings in the UI → run once → window closes → supervisor logic not used
 
 For detailed instructions, see [QUICKSTART.md](QUICKSTART.md)
 
@@ -127,8 +142,8 @@ uv sync
 # Run development version
 python core/cli.py --version
 
-# Build executable
-python build_exe.py --full
+# Build executable (fast onedir)
+python build_exe.py --clean --full
 ```
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development setup.
@@ -146,6 +161,30 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development setup.
 - [ ] Multi-language subtitle tracks
 - [ ] Subtitle styling options
 - [ ] Batch processing multiple timelines
+- [ ] Rich Resolve supervisor (queue, retries, logging)
+
+## 🔌 Interactive JSON Protocol (advanced)
+
+The exe accepts JSON commands on stdin when launched with `--interactive` and prints one JSON response per command on stdout.
+
+Requests (stdin)
+```json
+{"cmd":"test_place"}
+{"cmd":"transcribe","input":"C:\\path\\video.mp4","model":"base","device":"auto","language":null}
+{"cmd":"cancel"}
+{"cmd":"shutdown"}
+```
+
+Responses (stdout)
+```json
+{"success":true,"srt_path":"C:\\...\\file.srt"}
+{"success":false,"error":"cancel"}
+{"success":false,"error":"<message>"}
+```
+
+Notes
+- Models are NOT bundled; the first run downloads to the user cache: `%USERPROFILE%\.cache\resolve-ai-helper\models`.
+- The exe prints exactly one response per command; the supervisor should read lines and parse JSON.
 
 ### 🔮 Phase 3: Cross-Platform (Planned)
 - [ ] macOS support
