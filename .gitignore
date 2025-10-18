@@ -1,0 +1,44 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+
+# uv
+.python-version.local
+
+# Environment
+.env
+.env.local
+
+# Output directories
+runs/
+outputs/
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.wav
+*.jsonl
+*.srt
+*.ass
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log
+
