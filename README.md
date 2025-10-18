@@ -24,7 +24,7 @@ Resolve AI Helper is an open-source tool that adds automatic subtitle generation
 ┌────────────────────────────────────────────────────────────┐
 │                 DaVinci Resolve (Free)                     │
 │  Workspace → Scripts                                       │
-│  • test_exe_place_subtitle.py  (supervisor, persistent)    │
+│  • resolve-ai-helper.py        (main script, persistent)   │
 │  • launch_transcribe_ui.py     (one‑shot launcher)         │
 └───────────────┬────────────────────────────────────────────┘
                 │  JSON over stdin/stdout (pipes)
@@ -72,7 +72,7 @@ Why this approach
    - Inside that folder you will have:
      - `resolve_ai_helper/` (the onedir exe folder)
      - `launch_transcribe_ui.py` (one‑shot)
-     - You can also copy `resolve_scripts/test_exe_place_subtitle.py` (supervisor, recommended)
+     - You can also copy `resolve_scripts/resolve-ai-helper.py` (main script, recommended)
 
 5. **Restart DaVinci Resolve**
 
@@ -80,9 +80,9 @@ Why this approach
 
 1. Open your timeline in DaVinci Resolve
 Option A — Persistent (recommended for multi‑actions)
-1. Workspace → Scripts → Comp → `test_exe_place_subtitle`
+1. Workspace → Scripts → Comp → `resolve-ai-helper`
 2. The UI opens once in interactive mode
-3. Click actions in the UI (e.g., “Place Test Subtitle”, or Transcribe)
+3. Click actions in the UI (e.g., "Test Subtitle", or Transcribe)
 4. Each action emits JSON; the supervisor imports the SRT to the timeline
 5. Close the UI (or press Cancel) to stop the supervisor
 
