@@ -81,7 +81,7 @@
 The UI connects to your Resolve script and shows:
 
 ```python
-# From resolve_scripts/test_exe_place_subtitle.py
+# From resolve_scripts/resolve-ai-helper.py
 # Sends JSON events every 500ms:
 
 {
@@ -191,7 +191,7 @@ python test_resolve_ui.py
 python -m core.cli transcribe --show-ui
 
 # From Resolve Scripts menu
-# → Run test_exe_place_subtitle.py
+# → Run resolve-ai-helper.py
 # → See live updates in UI!
 ```
 
