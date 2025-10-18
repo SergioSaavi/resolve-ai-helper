@@ -496,15 +496,41 @@ def cmd_transcribe_ui(args):
         reader_t.start()
 
         from PySide6.QtCore import QTimer
+        # Signals to update UI from events
+        from PySide6.QtCore import Signal, QObject
+        class _EventBus(QObject):
+            timeline_event = Signal(dict)
+            selection_event = Signal(list)
+        bus = _EventBus()
+        bus.timeline_event.connect(main_window.update_timeline_context)
+        bus.selection_event.connect(main_window.update_selection)
+
         def poll_commands():
             try:
                 while True:
                     cmd = commands_q.get_nowait()
+                    # Event messages from supervisor
+                    if cmd.get('event') == 'timeline_state':
+                        bus.timeline_event.emit(cmd.get('timeline') or {})
+                        continue
+                    if cmd.get('event') == 'selection':
+                        bus.selection_event.emit(cmd.get('items') or [])
+                        continue
+                    # Command messages intended for actions
                     ctype = cmd.get('cmd')
                     if ctype == 'test_place':
                         on_test_place()
                     elif ctype == 'transcribe':
                         # Build settings dict to reuse on_transcribe_requested
+                        settings = {
+                            'input_file': cmd.get('input'),
+                            'model': cmd.get('model', 'base'),
+                            'device': cmd.get('device', 'auto'),
+                            'language': cmd.get('language'),
+                        }
+                        on_transcribe_requested(settings)
+                    elif ctype == 'transcribe_range':
+                        # For now treat same as transcribe; supervisor will export range to a file
                         settings = {
                             'input_file': cmd.get('input'),
                             'model': cmd.get('model', 'base'),
@@ -520,9 +546,16 @@ def cmd_transcribe_ui(args):
             except _queue.Empty:
                 pass
 
-        timer = QTimer()
+        timer = QTimer(main_window)
         timer.timeout.connect(poll_commands)
         timer.start(200)
+
+        # Keep strong references so GC doesn't stop polling
+        main_window._interactive = True
+        main_window._cmd_queue = commands_q
+        main_window._stdin_thread = reader_t
+        main_window._event_bus = bus
+        main_window._event_timer = timer
     main_window.show()
     
     app.exec()

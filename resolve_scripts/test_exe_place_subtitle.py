@@ -19,6 +19,7 @@ import os
 import json
 import subprocess
 from pathlib import Path
+import time
 import tempfile
 
 
@@ -131,41 +132,173 @@ def main():
         print(f"❌ Failed to start exe: {e}")
         return 1
 
-    print("UI launched. Send commands from Resolve by triggering UI buttons, or script can also write commands.")
-    print("Waiting for JSON payloads... close UI or send shutdown to end.")
+    print("UI launched. Sending live timeline state; waiting for JSON payloads...")
+
+    # --- Timeline polling and event streaming ---
+    def frames_to_tc(frames: int, fps: float) -> str:
+        if fps <= 0:
+            return "00:00:00:00"
+        hours = int(frames // (3600 * fps))
+        minutes = int((frames % (3600 * fps)) // (60 * fps))
+        seconds = int((frames % (60 * fps)) // fps)
+        ff = int(frames % fps)
+        return f"{hours:02d}:{minutes:02d}:{seconds:02d}:{ff:02d}"
+
+    def send_timeline_state():
+        # Refresh timeline reference to detect switches
+        try:
+            current_tl = project.GetCurrentTimeline()
+            if not current_tl:
+                print("[DEBUG] No current timeline")
+                return
+        except Exception as e:
+            print(f"[DEBUG] Failed to get current timeline: {e}")
+            return
+
+        try:
+            fps = float(current_tl.GetSetting("timelineFrameRate"))
+            print(f"[DEBUG] Got FPS: {fps}")
+        except Exception as e:
+            fps = 24.0
+            print(f"[DEBUG] FPS error: {e}, using default 24.0")
+        try:
+            name = current_tl.GetName()
+            print(f"[DEBUG] Got timeline name: {name}")
+        except Exception as e:
+            name = "Timeline"
+            print(f"[DEBUG] Name error: {e}")
+        try:
+            current_f = current_tl.GetCurrentTimecode()  # may return string on some versions
+            if isinstance(current_f, str):
+                tc = current_f
+            else:
+                tc = frames_to_tc(int(current_f), fps)
+            print(f"[DEBUG] Got timecode: {tc}")
+        except Exception as e:
+            tc = "00:00:00:00"
+            print(f"[DEBUG] TC error: {e}")
+        try:
+            # Use the correct API method: GetMarkInOut()
+            # Returns dict like {'video': {'in': 0, 'out': 134}, 'audio': {'in': 0, 'out': 134}}
+            # Keys are omitted if marks not set
+            marks = current_tl.GetMarkInOut()
+            print(f"[DEBUG] Got marks: {marks}")
+            
+            # Try to extract video in/out marks (prefer video, fallback to audio)
+            video_marks = marks.get('video', {}) if marks else {}
+            audio_marks = marks.get('audio', {}) if marks else {}
+            
+            # Use video marks if available, otherwise audio marks
+            in_f = video_marks.get('in') if video_marks else audio_marks.get('in')
+            out_f = video_marks.get('out') if video_marks else audio_marks.get('out')
+            
+            print(f"[DEBUG] Extracted in/out: {in_f} / {out_f}")
+            
+            # Only use marks if both in and out are set
+            if in_f is not None and out_f is not None and in_f >= 0 and out_f > in_f:
+                in_tc = frames_to_tc(int(in_f), fps)
+                out_tc = frames_to_tc(int(out_f), fps)
+                range_seconds = (out_f - in_f) / max(fps, 0.001)
+            else:
+                # No in/out marks set
+                in_tc = None
+                out_tc = None
+                range_seconds = None
+        except Exception as e:
+            in_tc = None
+            out_tc = None
+            range_seconds = None
+            print(f"[DEBUG] In/Out error: {e}")
+
+        evt = {
+            "event": "timeline_state",
+            "timeline": {
+                "name": name,
+                "fps": f"{fps:.2f}",
+                "tc": tc,
+                "in_tc": in_tc,
+                "out_tc": out_tc,
+                "range_seconds": range_seconds,
+            }
+        }
+        print(f"[DEBUG] Sending event: {json.dumps(evt)}")
+        try:
+            if proc.stdin:
+                proc.stdin.write(json.dumps(evt) + "\n")
+                proc.stdin.flush()
+                print("[DEBUG] Event sent successfully")
+        except Exception as e:
+            print(f"[DEBUG] Failed to send event: {e}")
+
+    # Use a thread to read stdout without blocking the polling loop
+    import threading
+    import queue
+    stdout_q = queue.Queue()
+    
+    def read_stdout():
+        try:
+            for line in iter(proc.stdout.readline, ''):
+                if line:
+                    stdout_q.put(line.strip())
+        except Exception:
+            pass
+    
+    reader_thread = threading.Thread(target=read_stdout, daemon=True)
+    reader_thread.start()
 
     try:
+        last_sent = 0.0
+        poll_count = 0
         while True:
-            line = proc.stdout.readline()
-            if not line:
-                # Process ended
-                code = proc.poll()
-                if code is not None:
-                    print(f"Process exited with code {code}")
-                    break
-                continue
-            line = line.strip()
-            if not line:
-                continue
-            # Parse JSON payload
-            try:
-                payload = json.loads(line)
-            except json.JSONDecodeError:
-                # Ignore non-JSON lines
-                continue
+            now = time.time()
+            # Poll timeline state every 500ms
+            if now - last_sent >= 0.5:
+                poll_count += 1
+                print(f"[DEBUG] Poll #{poll_count} at {now:.2f}s")
+                send_timeline_state()
+                last_sent = now
 
-            if not payload.get("success") and payload.get("error") == "cancel":
-                print("Received cancel payload. Supervisor exiting.")
+            # Check if process ended
+            code = proc.poll()
+            if code is not None:
+                print(f"Process exited with code {code}")
                 break
 
-            srt_path = payload.get("srt_path")
-            if srt_path:
-                p = Path(srt_path)
-                if p.exists():
-                    if import_srt(project, timeline, p):
-                        print("✓ Imported subtitle from exe payload. Waiting for next action...")
-                else:
-                    print(f"⚠ SRT path not found: {p}")
+            # Check for JSON responses from exe (non-blocking)
+            try:
+                while True:
+                    line = stdout_q.get_nowait()
+                    print(f"[DEBUG] Got line from exe: {line}")
+                    if not line:
+                        continue
+                    # Parse JSON payload
+                    try:
+                        payload = json.loads(line)
+                        print(f"[DEBUG] Parsed payload: {payload}")
+                    except json.JSONDecodeError as e:
+                        print(f"[DEBUG] JSON parse error: {e}")
+                        # Ignore non-JSON lines
+                        continue
+
+                    if not payload.get("success") and payload.get("error") == "cancel":
+                        print("Received cancel payload. Supervisor exiting.")
+                        raise StopIteration
+
+                    srt_path = payload.get("srt_path")
+                    if srt_path:
+                        p = Path(srt_path)
+                        if p.exists():
+                            if import_srt(project, timeline, p):
+                                print("✓ Imported subtitle from exe payload. Waiting for next action...")
+                        else:
+                            print(f"⚠ SRT path not found: {p}")
+            except queue.Empty:
+                pass
+            except StopIteration:
+                break
+
+            # Small sleep to avoid busy loop
+            time.sleep(0.05)
     finally:
         try:
             if proc.stdin:
