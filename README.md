@@ -1,252 +1,209 @@
-# Shorts Builder (Python + uv)
+# Resolve AI Helper
 
-**Local VOD → GPU Whisper transcription → captions → LLM highlight selection → FFmpeg multi-short rendering (9:16 with burned-in captions)**
+**Bring AI-powered transcription to DaVinci Resolve's free version!**
 
-## Features
+Resolve AI Helper is an open-source tool that adds automatic subtitle generation to DaVinci Resolve using OpenAI's Whisper AI, bypassing the limitations of the free version.
 
-- **GPU-accelerated transcription** with faster-whisper
-- **Styleable ASS captions** with word-level karaoke timing
-- **LLM-powered highlight selection** (OpenAI or compatible)
-- **Automated vertical short rendering** (9:16, 1:1, or 16:9)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+![Platform: Windows](https://img.shields.io/badge/Platform-Windows-blue.svg)
+![Python: 3.9+](https://img.shields.io/badge/Python-3.9+-green.svg)
 
-## ⚡ Easiest Way: Use the Makefile
+## ✨ Features
 
-**Don't want to type long commands? Use the Makefile!**
+- 🎯 **One-Click Transcription**: Select timeline → Run script → Get subtitles
+- 🚀 **GPU Acceleration**: Utilize CUDA for 10x faster transcription
+- 🎨 **Modern UI**: Beautiful PySide6 interface with live progress tracking
+- 🌍 **Multi-Language**: Supports 90+ languages with auto-detection
+- 📝 **SRT Export**: Industry-standard subtitle format
+- 🆓 **100% Free**: Works with DaVinci Resolve free version
+- 🔓 **Open Source**: MIT license, community-driven development
 
-```bash
-# Get SRT file for manual Premiere styling
-make transcribe-srt VIDEO=my_video.mp4
+## 🎬 How It Works
 
-# Full workflow: transcribe + generate shorts
-make full VIDEO=my_video.mp4
-
-# Quick test
-make quick VIDEO=my_video.mp4
-
-# High quality
-make quality VIDEO=my_video.mp4
+```
+┌─────────────────────────────────┐
+│   DaVinci Resolve (Free)        │
+│   User runs script from         │
+│   Workspace → Scripts menu      │
+└────────────┬────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────┐
+│  Standalone Executable          │
+│  • Shows settings UI            │
+│  • Runs Whisper transcription   │
+│  • Returns SRT file             │
+└────────────┬────────────────────┘
+             │
+             ▼
+┌─────────────────────────────────┐
+│   Timeline with Subtitles! ✨   │
+└─────────────────────────────────┘
 ```
 
-**See [MAKEFILE_GUIDE.md](MAKEFILE_GUIDE.md) for all commands and examples.**
+**Why this approach?** DaVinci Resolve's free version blocks custom UI in scripts. By moving the UI to a standalone executable, we bypass this limitation while maintaining a seamless user experience.
 
-## Prerequisites
+## 🚀 Quick Start
 
-### System Requirements
+### Prerequisites
 
-1. **FFmpeg** (required for video processing)
-   - **Ubuntu/Debian**: `sudo apt-get install ffmpeg`
-   - **macOS**: `brew install ffmpeg`
-   - **Windows**: `choco install ffmpeg` or download from [ffmpeg.org](https://ffmpeg.org)
+- **DaVinci Resolve** (Free or Studio) - [Download](https://www.blackmagicdesign.com/products/davinciresolve)
+- **FFmpeg** - [Installation Guide](INSTALL.md#installing-ffmpeg)
+- **Windows 10/11** (macOS/Linux support coming soon)
 
-2. **uv** (Python package manager)
-   ```bash
-   # Install uv
-   curl -LsSf https://astral.sh/uv/install.sh | sh
+### Installation
+
+1. **Download the latest release** from [Releases](https://github.com/your-repo/resolve-ai-helper/releases)
+
+2. **Extract the ZIP file** to a location of your choice
+
+3. **Run the installer** (or manual setup - see [INSTALL.md](INSTALL.md))
+
+4. **Copy the Resolve script**:
+   ```
+   Copy: resolve_scripts/transcribe_timeline.py
+   To: %APPDATA%\Blackmagic Design\DaVinci Resolve\Support\Fusion\Scripts\Comp\
    ```
 
-3. **CUDA** (optional, for GPU transcription)
-   - Recommended for faster-whisper GPU support
-   - CPU mode works but is slower
+5. **Restart DaVinci Resolve**
 
-## Quick Start
+### Usage
 
-### 1. Setup
+1. Open your timeline in DaVinci Resolve
+2. Go to **Workspace → Scripts → transcribe_timeline**
+3. Select your preferred model and settings
+4. Click **Transcribe** and wait
+5. Subtitles appear automatically in your timeline! 🎉
+
+For detailed instructions, see [QUICKSTART.md](QUICKSTART.md)
+
+## 📖 Documentation
+
+- **[Installation Guide](INSTALL.md)** - Detailed setup instructions
+- **[Quick Start Guide](QUICKSTART.md)** - Get started in 5 minutes
+- **[User Guide](docs/USER_GUIDE.md)** - Complete feature documentation
+- **[Troubleshooting](docs/TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Contributing](CONTRIBUTING.md)** - How to contribute to the project
+
+## 🎛️ Model Comparison
+
+| Model | Size | Speed | Accuracy | Best For |
+|-------|------|-------|----------|----------|
+| **tiny** | ~75MB | ⚡⚡⚡⚡⚡ | ⭐⭐ | Quick drafts, testing |
+| **base** | ~150MB | ⚡⚡⚡⚡ | ⭐⭐⭐ | **Most users** (recommended) |
+| **small** | ~500MB | ⚡⚡⚡ | ⭐⭐⭐⭐ | Professional work |
+| **medium** | ~1.5GB | ⚡⚡ | ⭐⭐⭐⭐⭐ | Maximum quality |
+
+**Recommendation**: Start with `base` - it offers the best balance of speed and accuracy for most videos.
+
+## 💻 System Requirements
+
+### Minimum
+- **OS**: Windows 10 (64-bit)
+- **RAM**: 4GB
+- **Storage**: 2GB free space
+- **Processor**: Intel Core i3 or equivalent
+
+### Recommended
+- **OS**: Windows 11 (64-bit)
+- **RAM**: 8GB or more
+- **GPU**: NVIDIA GPU with CUDA support (10x faster)
+- **Storage**: 5GB free space (for multiple models)
+- **Processor**: Intel Core i5 or equivalent
+
+## 🛠️ Building from Source
+
+Want to contribute or customize? Build from source:
 
 ```bash
-# Clone or navigate to project
-cd /path/to/shorts-builder
+# Clone repository
+git clone https://github.com/your-repo/resolve-ai-helper.git
+cd resolve-ai-helper
 
-# Create virtual environment and install dependencies (one command!)
+# Install dependencies
 uv sync
+# or: pip install -e .
 
-# Or manually:
-uv venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-uv pip install -e .
+# Run development version
+python core/cli.py --version
+
+# Build executable
+python build_exe.py --full
 ```
 
-### 2. Configure Environment
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed development setup.
 
-```bash
-# Copy example env file
-cp .env.example .env
+## 🗺️ Roadmap
 
-# Edit .env and add your OpenAI API key
-# OPENAI_API_KEY=sk-...
-# OPENAI_MODEL=gpt-4o-mini
-# Optional: OPENAI_BASE_URL=http://localhost:11434/v1 (for local LLMs)
-```
+### ✅ Phase 1: Core Transcription (Current)
+- [x] Whisper integration
+- [x] PySide6 UI
+- [x] Resolve script integration
+- [x] Windows support
 
-### 3. Transcribe a Video
+### 🚧 Phase 2: Enhanced Features (In Progress)
+- [ ] LLM-powered highlight detection
+- [ ] Multi-language subtitle tracks
+- [ ] Subtitle styling options
+- [ ] Batch processing multiple timelines
 
-```bash
-# GPU transcription with VAD (Voice Activity Detection)
-uv run python scripts/shorts_transcribe.py input.mp4 \
-  --model medium \
-  --device cuda \
-  --compute-type float16 \
-  --chunk-length 30 \
-  --vad \
-  --audio-first \
-  --outdir runs/$(date +%Y%m%d_%H%M%S)
+### 🔮 Phase 3: Cross-Platform (Planned)
+- [ ] macOS support
+- [ ] Linux support
+- [ ] GitHub Actions CI/CD
+- [ ] Auto-updates
 
-# CPU transcription (slower)
-uv run python scripts/shorts_transcribe.py input.mp4 \
-  --model base \
-  --device cpu \
-  --compute-type int8 \
-  --outdir runs/current
-```
+### 💡 Phase 4: Advanced AI (Future)
+- [ ] Speaker diarization
+- [ ] Auto-translation
+- [ ] Sentiment analysis for editing
+- [ ] Smart b-roll suggestions
 
-**Outputs:**
-- `runs/<timestamp>/transcript.jsonl` - Streamed segments with word-level timestamps
-- `runs/<timestamp>/captions.srt` - Standard SRT subtitles
-- `runs/<timestamp>/captions.ass` - **Styleable ASS subtitles with karaoke effect**
+## 🤝 Contributing
 
-### 4. Generate Shorts
+We welcome contributions! Here's how you can help:
 
-```bash
-# Generate 5 shorts from the transcribed video
-uv run python scripts/shorts_builder.py input.mp4 \
-  --workdir runs/<timestamp> \
-  --num-shorts 5 \
-  --aspect 9:16 \
-  --crf 20 \
-  --preset veryfast
+- 🐛 **Report Bugs**: Open an issue with details
+- 💡 **Suggest Features**: Share your ideas in discussions
+- 🔧 **Submit PRs**: Fix bugs or add features
+- 📖 **Improve Docs**: Help make documentation better
+- ⭐ **Star the Project**: Show your support!
 
-# Output: runs/<timestamp>/shorts/*.mp4
-```
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-**Arguments:**
-- `--num-shorts` - Number of highlights to generate (default: 5)
-- `--aspect` - Video aspect ratio: `9:16`, `1:1`, or `16:9` (default: 9:16)
-- `--crf` - Video quality (lower = better, 18-28 recommended, default: 20)
-- `--preset` - FFmpeg preset: `ultrafast`, `veryfast`, `medium`, `slow` (default: veryfast)
-- `--model` - LLM model to use (default: from OPENAI_MODEL env var)
+## 📜 License
 
-## Customizing Caption Styles
+This project is licensed under the **MIT License** - see [LICENSE](LICENSE) for details.
 
-The ASS subtitle format supports extensive styling. Edit the `ASS_HEADER` section in `scripts/shorts_transcribe.py`:
+### Third-Party Licenses
+- **faster-whisper**: MIT License
+- **PySide6**: LGPL
+- **PyInstaller**: GPL with exception
 
-```python
-ASS_HEADER = """[Script Info]
-...
-[V4+ Styles]
-Style: Default,Inter,64,&H00FFFFFF,&H00000000,&H7F000000,&H32000000,0,0,0,0,100,100,0,0,1,4,0,2,60,60,80,1
-Style: Emph,Inter,64,&H00FFFF00,&H00000000,&H7F000000,&H32000000,1,0,0,0,100,100,0,0,1,4,0,2,60,60,80,1
-"""
-```
+## 🙏 Acknowledgments
 
-**Style Parameters:**
-- **Fontname**: Font family (e.g., `Inter`, `Arial`, `Montserrat`)
-- **Fontsize**: Font size in pixels (e.g., `64`, `80`)
-- **PrimaryColour**: Text color in `&HAABBGGRR` format (ABGR hex)
-  - `&H00FFFFFF` = White
-  - `&H00FFFF00` = Yellow
-  - `&H0000FF00` = Green
-- **OutlineColour**: Outline color
-- **Bold**: `0` = normal, `1` = bold (or `-1`)
-- **Alignment**: `2` = bottom center, `5` = middle center, `8` = top center
-- **MarginV**: Vertical margin from bottom (in pixels)
+- **OpenAI** - For creating Whisper
+- **Blackmagic Design** - For DaVinci Resolve
+- **faster-whisper team** - For the optimized implementation
+- All our amazing contributors!
 
-The **Emph** style includes `{\k}` tags for word-by-word karaoke highlighting!
+## 📞 Support
 
-## Project Structure
+- **Documentation**: Check [docs/](docs/) folder
+- **Issues**: [GitHub Issues](https://github.com/your-repo/resolve-ai-helper/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/your-repo/resolve-ai-helper/discussions)
+- **Email**: support@your-email.com (for security issues)
 
-```
-shorts-builder/
-├── pyproject.toml              # uv dependencies
-├── .python-version             # Python 3.11
-├── .env.example                # Environment template
-├── README.md                   # This file
-├── PLAN.md                     # Detailed implementation plan
-├── scripts/
-│   ├── shorts_transcribe.py    # Whisper → JSONL/SRT/ASS
-│   └── shorts_builder.py       # LLM → highlight selection → FFmpeg
-├── templates/
-│   └── prompt_highlights.txt   # LLM prompt template
-└── runs/
-    └── <timestamp>/
-        ├── transcript.jsonl
-        ├── captions.{srt,ass}
-        ├── shorts_manifest.json
-        └── shorts/*.mp4
-```
+## ⚠️ Disclaimer
 
-## Advanced Usage
+This is an independent project and is not affiliated with, endorsed by, or connected to Blackmagic Design or OpenAI. DaVinci Resolve is a trademark of Blackmagic Design Pty Ltd.
 
-### Using Local LLMs (Ollama, LM Studio, etc.)
+---
 
-```bash
-# In .env:
-OPENAI_BASE_URL=http://localhost:11434/v1
-OPENAI_MODEL=llama3.2
-OPENAI_API_KEY=dummy
-```
+<div align="center">
 
-### Resume Interrupted Transcription
+**Made with ❤️ by the open-source community**
 
-```bash
-# Use --resume flag (requires same output directory)
-uv run python scripts/shorts_transcribe.py input.mp4 \
-  --outdir runs/existing_run \
-  --resume
-```
+[⭐ Star on GitHub](https://github.com/your-repo/resolve-ai-helper) | [📖 Documentation](docs/) | [🐛 Report Bug](https://github.com/your-repo/resolve-ai-helper/issues)
 
-### Custom Prompt Template
-
-Edit `templates/prompt_highlights.txt` to customize how the LLM selects highlights.
-
-### Batch Processing
-
-```bash
-for video in videos/*.mp4; do
-  timestamp=$(date +%Y%m%d_%H%M%S)
-  uv run python scripts/shorts_transcribe.py "$video" \
-    --outdir "runs/$timestamp" --device cuda --vad
-  uv run python scripts/shorts_builder.py "$video" \
-    --workdir "runs/$timestamp" --num-shorts 3
-done
-```
-
-## Troubleshooting
-
-### Quick Fixes
-
-**"CUDA/cuDNN errors" or "Unable to load libcudnn"**
-- Use CPU mode: `--device cpu --compute-type int8 --model base`
-- See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for GPU fix
-
-**"No module named 'faster_whisper'"**
-- Run `uv sync` to install dependencies
-
-**"CUDA out of memory"**
-- Use smaller model: `--model base` or `--model small`
-- Switch to CPU: `--device cpu --compute-type int8`
-
-**"FFmpeg not found"**
-- Install FFmpeg (see Prerequisites)
-- Ensure it's in your PATH: `ffmpeg -version`
-
-**"Invalid API key"**
-- Check `.env` file has correct `OPENAI_API_KEY`
-- Verify key with: `echo $OPENAI_API_KEY`
-
-**Poor highlight selection**
-- Increase context: edit `target_chars` in `shorts_builder.py`
-- Modify prompt: edit `templates/prompt_highlights.txt`
-- Try different model: `--model gpt-4`
-
-**For detailed troubleshooting**, see [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
-
-## Why uv?
-
-- **10-100x faster** than pip for dependency resolution
-- **Automatic venv management** - no manual activation needed with `uv run`
-- **Better reproducibility** with lock files
-- **Single command setup** - `uv sync` does everything
-
-## License
-
-MIT
-
+</div>

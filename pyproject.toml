@@ -1,7 +1,7 @@
 [project]
-name = "shorts-builder"
+name = "resolve-ai-helper"
 version = "0.1.0"
-description = "Local VOD → GPU Whisper transcription → captions → LLM highlight selection → FFmpeg multi-short rendering (9:16 with burned-in captions)"
+description = "AI-powered transcription for DaVinci Resolve free version - bringing Whisper AI to your timeline"
 readme = "README.md"
 requires-python = ">=3.9"
 dependencies = [
@@ -9,6 +9,8 @@ dependencies = [
     "tqdm",
     "python-dotenv",
     "openai>=1.40.0",
+    "PySide6>=6.6.0",
+    "pyinstaller>=6.0.0",
 ]
 
 [project.optional-dependencies]
