@@ -19,11 +19,11 @@ def clean_build_dirs():
     
     if build_dir.exists():
         shutil.rmtree(build_dir)
-        print(f"  ✓ Removed {build_dir}")
+        print(f"  [OK] Removed {build_dir}")
     
     if dist_dir.exists():
         shutil.rmtree(dist_dir)
-        print(f"  ✓ Removed {dist_dir}")
+        print(f"  [OK] Removed {dist_dir}")
     
     print()
 
@@ -82,7 +82,7 @@ def build_executable():
         PyInstaller.__main__.run(args)
         print()
         print("-" * 60)
-        print("✓ Build complete!")
+        print("[OK] Build complete!")
         print(f"  Executable folder: dist/resolve_ai_helper/")
         print(f"  EXE: dist/resolve_ai_helper/resolve_ai_helper.exe")
         return True
@@ -90,7 +90,7 @@ def build_executable():
     except Exception as e:
         print()
         print("-" * 60)
-        print(f"✗ Build failed: {e}")
+        print(f"[ERR] Build failed: {e}")
         return False
 
 
@@ -114,7 +114,7 @@ def test_executable():
     exe_path = Path("dist/resolve_ai_helper.exe")
     
     if not exe_path.exists():
-        print("✗ Executable not found, cannot test")
+        print("[ERR] Executable not found, cannot test")
         return False
     
     print()
@@ -133,9 +133,9 @@ def test_executable():
         )
         
         if result.returncode == 0:
-            print(f"✓ Version check passed: {result.stdout.strip()}")
+            print(f"[OK] Version check passed: {result.stdout.strip()}")
         else:
-            print(f"✗ Version check failed: {result.stderr}")
+            print(f"[ERR] Version check failed: {result.stderr}")
             return False
         
         # Test system check
@@ -147,21 +147,21 @@ def test_executable():
         )
         
         if result.returncode == 0:
-            print(f"✓ System check passed")
+            print(f"[OK] System check passed")
             print(f"  Output: {result.stdout[:100]}...")
         else:
-            print(f"✗ System check failed: {result.stderr}")
+            print(f"[ERR] System check failed: {result.stderr}")
             return False
         
         print()
-        print("✓ All tests passed!")
+        print("[OK] All tests passed!")
         return True
         
     except subprocess.TimeoutExpired:
-        print("✗ Test timed out")
+        print("[ERR] Test timed out")
         return False
     except Exception as e:
-        print(f"✗ Test failed: {e}")
+        print(f"[ERR] Test failed: {e}")
         return False
 
 
@@ -182,28 +182,28 @@ def create_distribution_package():
     exe_onefile = Path("dist/resolve_ai_helper.exe")
     if onedir_src.exists():
         shutil.copytree(onedir_src, comp_ready_dir / "resolve_ai_helper")
-        print("  ✓ Added resolve_ai_helper/ (onedir exe)")
+        print("  [OK] Added resolve_ai_helper/ (onedir exe)")
     elif exe_onefile.exists():
         shutil.copy(exe_onefile, comp_ready_dir / "resolve_ai_helper.exe")
-        print("  ✓ Added resolve_ai_helper.exe (onefile)")
+        print("  [OK] Added resolve_ai_helper.exe (onefile)")
     else:
-        print("  ✗ No executable found. Build step may have failed.")
+        print("  [ERR] No executable found. Build step may have failed.")
         return False
     
     # Copy the single launcher script only
     launcher_src = Path("resolve_scripts/launch_transcribe_ui.py")
     if launcher_src.exists():
         shutil.copy(launcher_src, comp_ready_dir / "launch_transcribe_ui.py")
-        print("  ✓ Added launch_transcribe_ui.py")
+        print("  [OK] Added launch_transcribe_ui.py")
     else:
-        print("  ✗ Launcher script not found.")
+        print("  [ERR] Launcher script not found.")
         return False
     
     print()
-    print(f"✓ Comp-ready folder created: {comp_ready_dir}")
+    print(f"[OK] Comp-ready folder created: {comp_ready_dir}")
     print("  Copy this entire folder into:")
     print("    C\\ProgramData\\Blackmagic Design\\DaVinci Resolve\\Fusion\\Scripts\\Comp")
-    print("  In Resolve: Workspace → Scripts → Comp → ResolveAIHelper → launch_transcribe_ui")
+    print("  In Resolve: Workspace -> Scripts -> Comp -> ResolveAIHelper -> launch_transcribe_ui")
     return True
 
 
@@ -221,13 +221,13 @@ def main():
     
     # Step 2: Build
     if not build_executable():
-        print("\n✗ Build process failed")
+        print("\n[ERR] Build process failed")
         sys.exit(1)
     
     # Step 3: Test
     if "--test" in sys.argv or "--full" in sys.argv:
         if not test_executable():
-            print("\n⚠ Warning: Tests failed, but executable was built")
+            print("\n[WARN] Warning: Tests failed, but executable was built")
     
     # Step 4: Package
     if "--package" in sys.argv or "--full" in sys.argv:

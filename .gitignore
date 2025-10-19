@@ -63,9 +63,12 @@ runs/
 .cache/
 *.log
 
-# PyInstaller build artifacts
+# PyInstaller build artifacts and deployment scripts
 build/
 dist/
+*.ps1
+DEPLOYMENT.md
+deploy-log.txt
 
 # Testing
 .pytest_cache/
